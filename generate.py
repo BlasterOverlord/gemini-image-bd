@@ -1,22 +1,13 @@
 import os
 import time
-import google.generativeai as genai
-from PIL import Image
-import io
+from google import genai
 from dotenv import load_dotenv
+from PIL import Image
 
 # ================= CONFIGURATION =================
 MODEL_ID = "gemini-2.5-flash-image"
 INPUT_FILE = "prompts.txt"
 OUTPUT_FOLDER = "fakes"
-
-# Safety settings to avoid censorship issues
-SAFETY_SETTINGS = [
-    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-]
 # =================================================
 
 def generate_dataset():
@@ -26,7 +17,7 @@ def generate_dataset():
     if not api_key:
         print("❌ ERROR: GEMINI_API_KEY is not set. Add it to your .env file.")
         return
-    genai.configure(api_key=api_key)
+    client = genai.Client(api_key=api_key)
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
     # 2. Read Prompts
@@ -59,22 +50,20 @@ def generate_dataset():
         print(f"[{file_number}/{len(prompts)}] Generating: {prompt_text[:50]}...")
 
         try:
-            model = genai.GenerativeModel(MODEL_ID)
-            response = model.generate_content(
-                prompt_text,
-                generation_config=genai.types.GenerationConfig(
-                    candidate_count=1
-                ),
-                safety_settings=SAFETY_SETTINGS
+            response = client.models.generate_content(
+                model=MODEL_ID,
+                contents=[prompt_text],
             )
 
             if response.parts:
-                img_data = response.parts[0].inline_data.data
-                img = Image.open(io.BytesIO(img_data))
-                if img.mode not in ("RGB",):
-                    img = img.convert("RGB")
-                img.save(filepath, "JPEG")
-                print(f"   ✅ Saved {filename}")
+                for part in response.parts:
+                    if part.inline_data is not None:
+                        image = part.as_image()
+                        image.save(filepath, "JPEG")
+                        print(f"   ✅ Saved {filename}")
+                        break
+                else:
+                    print(f"   ⚠️ API returned no image!")
             else:
                 print(f"   ⚠️ API returned no image!")
 
