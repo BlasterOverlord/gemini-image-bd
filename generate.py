@@ -63,8 +63,7 @@ def generate_dataset():
             response = model.generate_content(
                 prompt_text,
                 generation_config=genai.types.GenerationConfig(
-                    candidate_count=1,
-                    response_mime_type="image/jpeg"
+                    candidate_count=1
                 ),
                 safety_settings=SAFETY_SETTINGS
             )
