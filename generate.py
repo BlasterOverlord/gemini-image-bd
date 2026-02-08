@@ -59,7 +59,7 @@ def generate_dataset():
                 for part in response.parts:
                     if part.inline_data is not None:
                         image = part.as_image()
-                        image.save(filepath, "JPEG")
+                        image.save(filepath)
                         print(f"   ✅ Saved {filename}")
                         break
                 else:
@@ -68,15 +68,15 @@ def generate_dataset():
                 print(f"   ⚠️ API returned no image!")
 
             # Pause to avoid rate limits
-            time.sleep(10)
+            time.sleep(0.1)
 
         except Exception as e:
             print(f"   ❌ Error on {filename}: {e}")
             if "429" in str(e):
                 print("   ⏳ Rate limit hit.")
-                time.sleep(30)
-            else:
                 time.sleep(10)
+            else:
+                time.sleep(1)
 
     print("\n🎉 All prompts processed!")
 
